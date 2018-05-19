@@ -337,46 +337,46 @@ void forward(void) {
   MPI_Type_commit(&colonne);
 
 
-  	MPI_Datatype bloc_gather,bloc_test;
+    MPI_Datatype bloc_gather,bloc_test;
 
-  	if(my_rank==0)
-  	{
-  		MPI_Type_vector(height_bloc,width_bloc,global_size_y,MPI_DOUBLE,&bloc_test);
-	    MPI_Type_create_resized(bloc_test, 0, sizeof(double), &bloc_gather);
-  		MPI_Type_commit(&bloc_gather);
-  	}
+    if(my_rank==0)
+    {
+      MPI_Type_vector(height_bloc,width_bloc,global_size_y,MPI_DOUBLE,&bloc_test);
+      MPI_Type_create_resized(bloc_test, 0, sizeof(double), &bloc_gather);
+      MPI_Type_commit(&bloc_gather);
+    }
 
 
-  	int disp[np],count[np];
-  	if(my_rank==0)
-  	{
-	  	disp[0] = 0;
-	  	count[0] = 1;
+    int disp[np],count[np];
+    if(my_rank==0)
+    {
+      disp[0] = 0;
+      count[0] = 1;
 
-	  	for(int i = 1;i<np;i++)
-	  	{
-	  		count[i] = 1;
+      for(int i = 1;i<np;i++)
+      {
+        count[i] = 1;
 
-	  		// disp[i] = i*128;
-	  		if(i%(int)sqrt(np)==0) disp[i] = i/(int)sqrt(np) * global_size_y * height_bloc;
-	  		else disp[i] = disp[i-1] + width_bloc;
+        // disp[i] = i*128;
+        if(i%(int)sqrt(np)==0) disp[i] = i/(int)sqrt(np) * global_size_y * height_bloc;
+        else disp[i] = disp[i-1] + width_bloc;
 
-	  	}
+      }
 
-  	}
+    }
 
-  	
+    
   if(my_rank%(int)sqrt(np)==0 || my_rank%(int)sqrt(np)==sqrt(np)-1)
   {
-  	MPI_Type_vector(height_bloc,width_bloc,1,MPI_DOUBLE,&bloc_test);
-  	MPI_Type_create_resized(bloc_test, 0,  sizeof(double), &bloc_envoie);
-  	MPI_Type_commit(&bloc_envoie);
+    MPI_Type_vector(height_bloc,width_bloc,1,MPI_DOUBLE,&bloc_test);
+    MPI_Type_create_resized(bloc_test, 0,  sizeof(double), &bloc_envoie);
+    MPI_Type_commit(&bloc_envoie);
   }
   else
   {
-  	MPI_Type_vector(height_bloc,width_bloc,2,MPI_DOUBLE,&bloc_test);
-  	MPI_Type_create_resized(bloc_test, 0, sizeof(double), &bloc_envoie);
-  	MPI_Type_commit(&bloc_envoie);
+    MPI_Type_vector(height_bloc,width_bloc,2,MPI_DOUBLE,&bloc_test);
+    MPI_Type_create_resized(bloc_test, 0, sizeof(double), &bloc_envoie);
+    MPI_Type_commit(&bloc_envoie);
   }
 
   MPI_Gatherv(&HFIL(t,0,0),height_bloc*width_bloc,MPI_DOUBLE,&HFIL_global(t,0,0),count,disp,bloc_gather,0,MPI_COMM_WORLD);
@@ -392,21 +392,21 @@ void forward(void) {
   {  
       
         if (t == 1) 
-  	{
-  	  svdt = dt;
-  	  dt = 0;
-  	}
+    {
+      svdt = dt;
+      dt = 0;
+    }
         if (t == 2)
-  	{
-  	  dt = svdt / 2.;
-  	}
+    {
+      dt = svdt / 2.;
+    }
     
       #pragma omp parallel for
-      for (int i = (my_rank<sqrt(np)) ? 0:1; i <(my_rank<sqrt(np))*height_bloc + (my_rank>=sqrt(np))*(height_bloc+1);  i++)    
-  	{
+      for (int i = (my_rank<sqrt(np)) ? 0:1; i <((my_rank<sqrt(np))*height_bloc + (my_rank>=sqrt(np))*(height_bloc+1))/4;  i++)    
+    {
         // #pragma omp parallel for
-  	    for (int j = (my_rank%(int)sqrt(np)==0) ? 0:1; j < (my_rank%(int)sqrt(np)==0)*width_bloc + (my_rank%(int)sqrt(np)!=0)*(width_bloc+1); j++)
-  	    {   
+        for (int j = (my_rank%(int)sqrt(np)==0) ? 0:1; j < ((my_rank%(int)sqrt(np)==0)*width_bloc + (my_rank%(int)sqrt(np)!=0)*(width_bloc+1))/4; j++)
+        {   
           {
             hPhy_forward(t, i, j);
             uPhy_forward(t, i, j);
@@ -417,56 +417,56 @@ void forward(void) {
             vFil_forward(t, i, j);
           }
 
-  	    }
-  	}
+        }
+    }
 
-  	if(my_rank>=sqrt(np))
-  	{
-  		
-  		MPI_Send(&HPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_HPHY_LIGNE,MPI_COMM_WORLD);
-  		MPI_Send(&VPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_VPHY_LIGNE,MPI_COMM_WORLD);
-  		MPI_Recv(&UPHY(t,0,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_UPHY_LIGNE,MPI_COMM_WORLD,&status);
+    if(my_rank>=sqrt(np))
+    {
+      
+      MPI_Send(&HPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_HPHY_LIGNE,MPI_COMM_WORLD);
+      MPI_Send(&VPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_VPHY_LIGNE,MPI_COMM_WORLD);
+      MPI_Recv(&UPHY(t,0,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank-(int)sqrt(np),TAG_UPHY_LIGNE,MPI_COMM_WORLD,&status);
 
-  		// printf("Process %d a envoyé à %d HPHY:%lf\n",my_rank,my_rank-(int)sqrt(np),HPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1));
-  	}
+      // printf("Process %d a envoyé à %d HPHY:%lf\n",my_rank,my_rank-(int)sqrt(np),HPHY(t,1,(my_rank%(int)sqrt(np)==0) ? 0:1));
+    }
 
-  	if(my_rank<np-sqrt(np))
-  	{
-  		
-  		MPI_Send(&UPHY(t,size_x-2,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_UPHY_LIGNE,MPI_COMM_WORLD);
-  		MPI_Recv(&HPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_HPHY_LIGNE,MPI_COMM_WORLD,&status);
-  		MPI_Recv(&VPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_VPHY_LIGNE,MPI_COMM_WORLD,&status);
+    if(my_rank<np-sqrt(np))
+    {
+      
+      MPI_Send(&UPHY(t,size_x-2,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_UPHY_LIGNE,MPI_COMM_WORLD);
+      MPI_Recv(&HPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_HPHY_LIGNE,MPI_COMM_WORLD,&status);
+      MPI_Recv(&VPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1),width_bloc,MPI_DOUBLE,my_rank+(int)sqrt(np),TAG_VPHY_LIGNE,MPI_COMM_WORLD,&status);
 
-  		// printf("Process %d a reçu HPHY:%lf\n",my_rank,HPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1));
-  	}
+      // printf("Process %d a reçu HPHY:%lf\n",my_rank,HPHY(t,size_x-1,(my_rank%(int)sqrt(np)==0) ? 0:1));
+    }
 
-  	if(my_rank%(int)sqrt(np)!=sqrt(np)-1)
-  	{
-  		MPI_Send(&HPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-2),1,colonne,my_rank+1,TAG_HPHY_COLONNE,MPI_COMM_WORLD);
-  		MPI_Send(&UPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-2),1,colonne,my_rank+1,TAG_UPHY_COLONNE,MPI_COMM_WORLD);
-  		MPI_Recv(&VPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-1),1,colonne,my_rank+1,TAG_VPHY_COLONNE,MPI_COMM_WORLD,&status);
+    if(my_rank%(int)sqrt(np)!=sqrt(np)-1)
+    {
+      MPI_Send(&HPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-2),1,colonne,my_rank+1,TAG_HPHY_COLONNE,MPI_COMM_WORLD);
+      MPI_Send(&UPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-2),1,colonne,my_rank+1,TAG_UPHY_COLONNE,MPI_COMM_WORLD);
+      MPI_Recv(&VPHY(t,(my_rank<sqrt(np) ? 0:1),size_y-1),1,colonne,my_rank+1,TAG_VPHY_COLONNE,MPI_COMM_WORLD,&status);
 
-  		// printf("Process %d a envoyé à process %d HPHY:%lf\n",my_rank,my_rank+1,HPHY(t,30,size_y-2));
-  	}
+      // printf("Process %d a envoyé à process %d HPHY:%lf\n",my_rank,my_rank+1,HPHY(t,30,size_y-2));
+    }
 
-  	if(my_rank%(int)sqrt(np)!=0)
-  	{
-  		MPI_Send(&VPHY(t,(my_rank<sqrt(np) ? 0:1),1),1,colonne,my_rank-1,TAG_VPHY_COLONNE,MPI_COMM_WORLD);
-  		MPI_Recv(&HPHY(t,(my_rank<sqrt(np) ? 0:1),0),1,colonne,my_rank-1,TAG_HPHY_COLONNE,MPI_COMM_WORLD,&status);
-  		MPI_Recv(&UPHY(t,(my_rank<sqrt(np) ? 0:1),0),1,colonne,my_rank-1,TAG_UPHY_COLONNE,MPI_COMM_WORLD,&status);
+    if(my_rank%(int)sqrt(np)!=0)
+    {
+      MPI_Send(&VPHY(t,(my_rank<sqrt(np) ? 0:1),1),1,colonne,my_rank-1,TAG_VPHY_COLONNE,MPI_COMM_WORLD);
+      MPI_Recv(&HPHY(t,(my_rank<sqrt(np) ? 0:1),0),1,colonne,my_rank-1,TAG_HPHY_COLONNE,MPI_COMM_WORLD,&status);
+      MPI_Recv(&UPHY(t,(my_rank<sqrt(np) ? 0:1),0),1,colonne,my_rank-1,TAG_UPHY_COLONNE,MPI_COMM_WORLD,&status);
 
-  		// printf("Process %d a reçu HPHY:%lf \n",my_rank,HPHY(t,30,0));
-  	}
+      // printf("Process %d a reçu HPHY:%lf \n",my_rank,HPHY(t,30,0));
+    }
       MPI_Gatherv(&HFIL(t,0,0),height_bloc*width_bloc,MPI_DOUBLE,&HFIL_global(t,0,0),count,disp,bloc_gather,0,MPI_COMM_WORLD);
 
         if (file_export && my_rank==0) 
           {
-  	  export_step(file, t);
+      export_step(file, t);
           }
         
         if (t == 2) 
           {
-  	  dt = svdt;
+      dt = svdt;
           }
   }
 
