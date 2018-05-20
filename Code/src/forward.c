@@ -402,7 +402,7 @@ void forward(void) {
     }
     
       #pragma omp parallel for
-      for (int i = (my_rank<sqrt(np)) ? 0:1; i <((my_rank<sqrt(np))*height_bloc + (my_rank>=sqrt(np))*(height_bloc+1))/4;  i++)    
+      for (int i = (my_rank<sqrt(np)) ? 0:1; i <((my_rank<sqrt(np))*height_bloc + (my_rank>=sqrt(np))*(height_bloc+1));  i++)    
     {
         // #pragma omp parallel for
         for (int j = (my_rank%(int)sqrt(np)==0) ? 0:1; j < ((my_rank%(int)sqrt(np)==0)*width_bloc + (my_rank%(int)sqrt(np)!=0)*(width_bloc+1))/4; j++)
